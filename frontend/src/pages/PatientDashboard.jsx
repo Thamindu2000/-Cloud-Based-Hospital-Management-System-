@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { formatAppointmentDate } from '../utils/dateFormatter';
 
 const PatientDashboard = () => {
   const patientId = localStorage.getItem('profileId');
@@ -94,11 +95,14 @@ const PatientDashboard = () => {
     }
 
     try {
-      const formattedDate = new Date(appointmentDate).toISOString();
+      const formattedDate = appointmentDate.includes(':') && appointmentDate.split(':').length === 2
+        ? `${appointmentDate}:00`
+        : appointmentDate;
+
       const response = await api.post('/api/appointments/book', {
         patientId: parseInt(patientId, 10),
         doctorId: parseInt(selectedDoctorId, 10),
-        appointmentDate: formattedDate.substring(0, 19) // ISO without Z to match LocalDateTime
+        appointmentDate: formattedDate
       });
 
       setAppointments([...appointments, response.data]);
@@ -303,7 +307,7 @@ const PatientDashboard = () => {
                       <td className="py-3.5 font-medium text-slate-700">{a.doctor?.name}</td>
                       <td className="py-3.5 text-slate-500">{a.doctor?.specialization}</td>
                       <td className="py-3.5 text-slate-500">
-                        {new Date(a.appointmentDate).toLocaleString()}
+                        {formatAppointmentDate(a.appointmentDate)}
                       </td>
                       <td className="py-3.5">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${

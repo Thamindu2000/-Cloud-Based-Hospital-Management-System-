@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
+import { formatAppointmentDate } from '../utils/dateFormatter';
 
 const AdminDashboard = () => {
   const [patients, setPatients] = useState([]);
@@ -269,7 +270,7 @@ const AdminDashboard = () => {
                       <td className="py-3.5 font-medium text-slate-700">{a.patient?.name}</td>
                       <td className="py-3.5 text-slate-600">{a.doctor?.name}</td>
                       <td className="py-3.5 text-slate-500">
-                        {new Date(a.appointmentDate).toLocaleString()}
+                        {formatAppointmentDate(a.appointmentDate)}
                       </td>
                       <td className="py-3.5">
                         <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${

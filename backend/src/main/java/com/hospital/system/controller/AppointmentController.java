@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import com.fasterxml.jackson.annotation.JsonFormat;
 
 @RestController
 @RequestMapping("/api/appointments")
@@ -66,6 +67,7 @@ public class AppointmentController {
     public static class BookAppointmentRequest {
         private Long patientId;
         private Long doctorId;
+        @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime appointmentDate;
     }
 
