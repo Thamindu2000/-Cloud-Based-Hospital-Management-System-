@@ -291,14 +291,14 @@ const PatientDashboard = () => {
           {/* Scheduled Appointments */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <h2 className="text-xl font-bold text-slate-800 mb-4">My Booked Appointments</h2>
-            <div className="overflow-x-auto">
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto rounded-b-lg">
               <table className="min-w-full divide-y divide-slate-100">
                 <thead>
                   <tr className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    <th className="pb-3">Doctor</th>
-                    <th className="pb-3">Specialization</th>
-                    <th className="pb-3">Date / Time</th>
-                    <th className="pb-3">Status</th>
+                    <th className="pb-3 sticky top-0 z-10 bg-white">Doctor</th>
+                    <th className="pb-3 sticky top-0 z-10 bg-white">Specialization</th>
+                    <th className="pb-3 sticky top-0 z-10 bg-white">Date / Time</th>
+                    <th className="pb-3 sticky top-0 z-10 bg-white">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">

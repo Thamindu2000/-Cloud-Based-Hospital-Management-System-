@@ -6,6 +6,10 @@ const AdminDashboard = () => {
   const [patients, setPatients] = useState([]);
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
+
+  // Filtering States
+  const [patientNameFilter, setPatientNameFilter] = useState('');
+  const [dateFilter, setDateFilter] = useState('');
   
   // Register Doctor Form State
   const [docUsername, setDocUsername] = useState('');
@@ -254,38 +258,101 @@ const AdminDashboard = () => {
           {/* Bookings Tracker */}
           <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
             <h2 className="text-xl font-bold text-slate-800 mb-4">Hospital Appointments</h2>
-            <div className="overflow-x-auto">
+
+            {/* Filtering Controls */}
+            <div className="flex flex-col md:flex-row md:items-end gap-4 mb-6 bg-slate-50 p-4 rounded-xl border border-slate-100">
+              <div className="flex-grow">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Patient Name</label>
+                <input
+                  type="text"
+                  placeholder="Search patient name..."
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-hospital-500 focus:border-hospital-500 transition-all"
+                  value={patientNameFilter}
+                  onChange={e => setPatientNameFilter(e.target.value)}
+                />
+              </div>
+
+              <div className="w-full md:w-48">
+                <label className="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Filter by Date</label>
+                <input
+                  type="date"
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-hospital-500 focus:border-hospital-500 transition-all"
+                  value={dateFilter}
+                  onChange={e => setDateFilter(e.target.value)}
+                />
+              </div>
+
+              {(patientNameFilter || dateFilter) && (
+                <button
+                  onClick={() => {
+                    setPatientNameFilter('');
+                    setDateFilter('');
+                  }}
+                  className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg font-semibold text-sm transition-colors md:h-[38px] flex items-center justify-center whitespace-nowrap"
+                >
+                  Clear Filters
+                </button>
+              )}
+            </div>
+
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto rounded-b-lg">
               <table className="min-w-full divide-y divide-slate-100">
                 <thead>
                   <tr className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                    <th className="pb-3">Patient</th>
-                    <th className="pb-3">Doctor</th>
-                    <th className="pb-3">Date / Time</th>
-                    <th className="pb-3">Status</th>
+                    <th className="pb-3 sticky top-0 z-10 bg-white">Patient</th>
+                    <th className="pb-3 sticky top-0 z-10 bg-white">Doctor</th>
+                    <th className="pb-3 sticky top-0 z-10 bg-white">Date / Time</th>
+                    <th className="pb-3 sticky top-0 z-10 bg-white">Status</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 text-sm">
-                  {appointments.map(a => (
-                    <tr key={a.id}>
-                      <td className="py-3.5 font-medium text-slate-700">{a.patient?.name}</td>
-                      <td className="py-3.5 text-slate-600">{a.doctor?.name}</td>
-                      <td className="py-3.5 text-slate-500">
-                        {formatAppointmentDate(a.appointmentDate)}
-                      </td>
-                      <td className="py-3.5">
-                        <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
-                          a.status === 'APPROVED' ? 'bg-green-50 text-green-700' :
-                          a.status === 'CANCELLED' ? 'bg-red-50 text-red-700' :
-                          'bg-amber-50 text-amber-700'
-                        }`}>
-                          {a.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                  {appointments.length === 0 && (
+                  {appointments
+                    .filter(a => {
+                      const patientName = a.patient?.name || '';
+                      const matchesName = patientName.toLowerCase().includes(patientNameFilter.toLowerCase());
+
+                      let matchesDate = true;
+                      if (dateFilter) {
+                        const apptDatePart = a.appointmentDate ? a.appointmentDate.split('T')[0] : '';
+                        matchesDate = apptDatePart === dateFilter;
+                      }
+
+                      return matchesName && matchesDate;
+                    })
+                    .map(a => (
+                      <tr key={a.id}>
+                        <td className="py-3.5 font-medium text-slate-700">{a.patient?.name}</td>
+                        <td className="py-3.5 text-slate-600">{a.doctor?.name}</td>
+                        <td className="py-3.5 text-slate-500">
+                          {formatAppointmentDate(a.appointmentDate)}
+                        </td>
+                        <td className="py-3.5">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${
+                            a.status === 'APPROVED' ? 'bg-green-50 text-green-700' :
+                            a.status === 'CANCELLED' ? 'bg-red-50 text-red-700' :
+                            'bg-amber-50 text-amber-700'
+                          }`}>
+                            {a.status}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  {appointments.filter(a => {
+                    const patientName = a.patient?.name || '';
+                    const matchesName = patientName.toLowerCase().includes(patientNameFilter.toLowerCase());
+
+                    let matchesDate = true;
+                    if (dateFilter) {
+                      const apptDatePart = a.appointmentDate ? a.appointmentDate.split('T')[0] : '';
+                      matchesDate = apptDatePart === dateFilter;
+                    }
+
+                    return matchesName && matchesDate;
+                  }).length === 0 && (
                     <tr>
-                      <td colSpan="4" className="text-center py-6 text-slate-400">No scheduled appointments.</td>
+                      <td colSpan="4" className="text-center py-6 text-slate-400">
+                        {appointments.length === 0 ? "No scheduled appointments." : "No appointments matching active filters."}
+                      </td>
                     </tr>
                   )}
                 </tbody>
