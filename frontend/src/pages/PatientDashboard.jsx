@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { formatAppointmentDate } from '../utils/dateFormatter';
+import PageTransition from '../components/PageTransition';
+import LoadingScreen from '../components/LoadingScreen';
 
 const PatientDashboard = () => {
   const patientId = localStorage.getItem('profileId');
@@ -147,15 +149,12 @@ const PatientDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-hospital-600"></div>
-      </div>
-    );
+    return <LoadingScreen message="Syncing Patient Records..." />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <PageTransition>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-800">Welcome, {profile?.name}</h1>
@@ -399,7 +398,8 @@ const PatientDashboard = () => {
 
       </div>
     </div>
-  );
+  </PageTransition>
+);
 };
 
 export default PatientDashboard;

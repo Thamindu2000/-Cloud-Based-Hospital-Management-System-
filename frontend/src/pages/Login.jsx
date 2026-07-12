@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import PageTransition from '../components/PageTransition';
+import LoadingScreen from '../components/LoadingScreen';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -49,7 +51,10 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <>
+      {loading && <LoadingScreen fullPage message="Authenticating credentials..." />}
+      <PageTransition>
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
         <div>
           <div className="flex justify-center">
@@ -127,7 +132,9 @@ const Login = () => {
         </div>
       </div>
     </div>
-  );
+  </PageTransition>
+</>
+);
 };
 
 export default Login;

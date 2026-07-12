@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
 import { formatAppointmentDate } from '../utils/dateFormatter';
+import PageTransition from '../components/PageTransition';
+import LoadingScreen from '../components/LoadingScreen';
 
 const AdminDashboard = () => {
   const [patients, setPatients] = useState([]);
@@ -81,16 +83,13 @@ const AdminDashboard = () => {
   };
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-96">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-hospital-600"></div>
-      </div>
-    );
+    return <LoadingScreen message="Loading Admin Dashboard..." />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <h1 className="text-3xl font-bold text-slate-800 mb-8">Admin Dashboard</h1>
+    <PageTransition>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <h1 className="text-3xl font-bold text-slate-800 mb-8">Admin Dashboard</h1>
 
       {error && (
         <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-md">
@@ -362,7 +361,8 @@ const AdminDashboard = () => {
         </div>
       </div>
     </div>
-  );
+  </PageTransition>
+);
 };
 
 export default AdminDashboard;

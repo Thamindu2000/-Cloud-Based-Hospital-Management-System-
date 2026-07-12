@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import api from '../services/api';
+import PageTransition from '../components/PageTransition';
+import LoadingScreen from '../components/LoadingScreen';
 
 const Register = () => {
   const [formData, setFormData] = useState({
@@ -50,7 +52,10 @@ const Register = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
+    <>
+      {loading && <LoadingScreen fullPage message="Creating account..." />}
+      <PageTransition>
+        <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-lg w-full space-y-8 bg-white p-8 rounded-2xl shadow-xl border border-slate-100">
         <div>
           <h2 className="text-center text-3xl font-extrabold text-slate-900">
@@ -179,7 +184,9 @@ const Register = () => {
         </div>
       </div>
     </div>
-  );
+  </PageTransition>
+</>
+);
 };
 
 export default Register;
