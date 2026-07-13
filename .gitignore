@@ -1,0 +1,4 @@
+node_modules/
+Endpoint URL.txt
+my-hospital-key.pem
+.env
