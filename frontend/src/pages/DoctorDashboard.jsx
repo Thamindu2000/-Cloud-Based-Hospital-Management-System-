@@ -4,10 +4,31 @@ import { formatAppointmentDate } from '../utils/dateFormatter';
 import PageTransition from '../components/PageTransition';
 import LoadingScreen from '../components/LoadingScreen';
 
+const getFormattedFileUrl = (url) => {
+  if (!url) return '';
+  const apiBase = api.defaults.baseURL || 'http://localhost:8080';
+  const normalizedBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
+  return url.replace('http://localhost:8080', normalizedBase);
+};
+
 const DoctorDashboard = () => {
   const [appointments, setAppointments] = useState([]);
   const [patients, setPatients] = useState([]);
   const [selectedPatient, setSelectedPatient] = useState(null);
+  
+  // Scans Viewer States
+  const [selectedPatientScans, setSelectedPatientScans] = useState([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  const viewPatientRecords = async (patientId) => {
+    try {
+      const res = await api.get(`/api/medical-images/patient/${patientId}`);
+      setSelectedPatientScans(res.data);
+      setIsModalOpen(true);
+    } catch (err) {
+      console.error("Error fetching scans:", err);
+    }
+  };
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -181,14 +202,21 @@ const DoctorDashboard = () => {
                 Select a patient name from upcoming appointments to view their historical health records.
               </p>
               <div className="divide-y divide-slate-100 max-h-60 overflow-y-auto">
-                {patients.map(p => (
+                {patients.map(patient => (
                   <div
-                    key={p.id}
-                    onClick={() => setSelectedPatient(p)}
-                    className="py-2.5 px-1 hover:bg-slate-50 cursor-pointer text-sm font-medium text-slate-600 flex justify-between items-center"
+                    key={patient.id}
+                    className="py-2.5 px-1 hover:bg-slate-50 text-sm font-medium text-slate-600 flex justify-between items-center"
                   >
-                    <span>{p.name}</span>
-                    <span className="text-xs text-slate-400">{p.age} yrs</span>
+                    <span onClick={() => setSelectedPatient(patient)} className="cursor-pointer hover:underline">{patient.name}</span>
+                    <div className="flex items-center space-x-3">
+                      <span className="text-xs text-slate-400">{patient.age} yrs</span>
+                      <button 
+                        onClick={() => viewPatientRecords(patient.id)}
+                        className="text-xs bg-sky-100 text-sky-700 px-2 py-1 rounded hover:bg-sky-200 transition-colors"
+                      >
+                        View Records
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -196,6 +224,49 @@ const DoctorDashboard = () => {
           )}
         </div>
       </div>
+      
+      {/* Patient Medical Records Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-lg shadow-2xl border border-slate-100">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-bold text-slate-800">Patient Medical Records</h3>
+              <button onClick={() => setIsModalOpen(false)} className="text-slate-400 hover:text-slate-600 text-lg">✕</button>
+            </div>
+            
+            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+              {selectedPatientScans.map(s => (
+                <div key={s.id} className="flex justify-between items-center p-3 border border-slate-100 rounded-xl bg-slate-50 hover:bg-slate-100 transition-colors">
+                  <div className="flex flex-col">
+                    <span className="font-semibold text-slate-700 text-sm">{s.description}</span>
+                    <span className="text-[10px] text-slate-400 font-normal">Uploaded: {new Date(s.uploadedAt).toLocaleString()}</span>
+                  </div>
+                  <a
+                    href={getFormattedFileUrl(s.fileUrl)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-hospital-600 hover:text-hospital-800 border border-hospital-200 rounded-lg px-3 py-1.5 bg-white hover:bg-hospital-50 transition-colors shadow-sm"
+                  >
+                    View File
+                  </a>
+                </div>
+              ))}
+              {selectedPatientScans.length === 0 && (
+                <div className="text-center py-6 text-slate-400 text-sm">
+                  No medical scan records found for this patient.
+                </div>
+              )}
+            </div>
+            
+            <button
+              onClick={() => setIsModalOpen(false)}
+              className="mt-6 w-full bg-slate-800 hover:bg-slate-950 text-white font-semibold py-2.5 rounded-xl shadow-md transition-colors"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   </PageTransition>
 );

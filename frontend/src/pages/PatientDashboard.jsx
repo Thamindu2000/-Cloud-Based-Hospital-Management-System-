@@ -318,8 +318,8 @@ const PatientDashboard = () => {
                         </td>
                         <td className="py-3.5">
                           <span className={`px-2.5 py-1 rounded-full text-xs font-bold ${a.status === 'APPROVED' ? 'bg-green-50 text-green-700' :
-                              a.status === 'CANCELLED' ? 'bg-red-50 text-red-700' :
-                                'bg-amber-50 text-amber-700'
+                            a.status === 'CANCELLED' ? 'bg-red-50 text-red-700' :
+                              'bg-amber-50 text-amber-700'
                             }`}>
                             {a.status}
                           </span>
