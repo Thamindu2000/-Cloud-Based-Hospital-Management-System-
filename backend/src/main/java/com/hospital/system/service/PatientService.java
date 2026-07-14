@@ -23,11 +23,13 @@ public class PatientService {
     public Patient registerPatient(String username, String password, String name, Integer age, String bloodGroup, String medicalHistory) {
         User user = userService.registerUser(username, password, Role.PATIENT);
         
+        String normalizedBloodGroup = (bloodGroup == null || bloodGroup.trim().isEmpty() || bloodGroup.equalsIgnoreCase("Unknown")) ? null : bloodGroup;
+
         Patient patient = Patient.builder()
                 .user(user)
                 .name(name)
                 .age(age)
-                .bloodGroup(bloodGroup)
+                .bloodGroup(normalizedBloodGroup)
                 .medicalHistory(medicalHistory)
                 .build();
         
@@ -56,9 +58,11 @@ public class PatientService {
         Patient patient = patientRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
         
+        String normalizedBloodGroup = (bloodGroup == null || bloodGroup.trim().isEmpty() || bloodGroup.equalsIgnoreCase("Unknown")) ? null : bloodGroup;
+        
         patient.setName(name);
         patient.setAge(age);
-        patient.setBloodGroup(bloodGroup);
+        patient.setBloodGroup(normalizedBloodGroup);
         patient.setMedicalHistory(medicalHistory);
         
         return patientRepository.save(patient);

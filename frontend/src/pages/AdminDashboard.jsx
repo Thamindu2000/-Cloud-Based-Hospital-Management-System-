@@ -24,6 +24,11 @@ const AdminDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Edit Doctor State
+  const [editingDoctor, setEditingDoctor] = useState(null);
+  const [editName, setEditName] = useState('');
+  const [editSpecialization, setEditSpecialization] = useState('Cardiology');
+
   const fetchData = async () => {
     try {
       const [resPatients, resAppointments, resDoctors] = await Promise.all([
@@ -79,6 +84,44 @@ const AdminDashboard = () => {
       setPatients(patients.filter(p => p.id !== id));
     } catch (err) {
       alert('Failed to delete patient.');
+    }
+  };
+
+  const handleDeleteDoctor = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this doctor? All appointments booked with this doctor will also be deleted.')) return;
+    try {
+      await api.delete(`/api/doctors/${id}`);
+      setDoctors(doctors.filter(d => d.id !== id));
+      // Refresh appointments to ensure UI doesn't show appointments with deleted doctor
+      const resAppointments = await api.get('/api/appointments');
+      setAppointments(resAppointments.data);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to delete doctor.');
+    }
+  };
+
+  const handleEditDoctor = (doctor) => {
+    setEditingDoctor(doctor);
+    setEditName(doctor.name);
+    setEditSpecialization(doctor.specialization);
+  };
+
+  const handleUpdateDoctor = async (e) => {
+    e.preventDefault();
+    try {
+      await api.put(`/api/doctors/${editingDoctor.id}`, {
+        name: editName,
+        specialization: editSpecialization
+      });
+      
+      setDoctors(doctors.map(d => d.id === editingDoctor.id ? { ...d, name: editName, specialization: editSpecialization } : d));
+      
+      const resAppointments = await api.get('/api/appointments');
+      setAppointments(resAppointments.data);
+      
+      setEditingDoctor(null);
+    } catch (err) {
+      alert(err.response?.data?.message || 'Failed to update doctor.');
     }
   };
 
@@ -230,8 +273,10 @@ const AdminDashboard = () => {
                       <td className="py-3.5 font-medium text-slate-700">{p.name}</td>
                       <td className="py-3.5 text-slate-500">{p.age}</td>
                       <td className="py-3.5">
-                        <span className="bg-red-50 text-red-600 text-xs px-2.5 py-0.5 rounded-full font-semibold">
-                          {p.bloodGroup}
+                        <span className={`text-xs px-2.5 py-0.5 rounded-full font-semibold ${
+                          p.bloodGroup ? 'bg-red-50 text-red-600' : 'bg-slate-100 text-slate-500'
+                        }`}>
+                          {p.bloodGroup || 'Unknown'}
                         </span>
                       </td>
                       <td className="py-3.5 text-right">
@@ -247,6 +292,49 @@ const AdminDashboard = () => {
                   {patients.length === 0 && (
                     <tr>
                       <td colSpan="4" className="text-center py-6 text-slate-400">No patient records found.</td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Doctor Profiles */}
+          <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+            <h2 className="text-xl font-bold text-slate-800 mb-4">Doctor Profiles</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-slate-100">
+                <thead>
+                  <tr className="text-left text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                    <th className="pb-3">Name</th>
+                    <th className="pb-3">Specialization</th>
+                    <th className="pb-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm">
+                  {doctors.map(d => (
+                    <tr key={d.id} className="hover:bg-slate-50">
+                      <td className="py-3.5 font-medium text-slate-700">{d.name}</td>
+                      <td className="py-3.5 text-slate-500">{d.specialization}</td>
+                      <td className="py-3.5 text-right space-x-3">
+                        <button
+                          onClick={() => handleEditDoctor(d)}
+                          className="text-blue-600 hover:text-blue-800 font-semibold"
+                        >
+                          Edit
+                        </button>
+                        <button
+                          onClick={() => handleDeleteDoctor(d.id)}
+                          className="text-red-500 hover:text-red-700 font-semibold"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                  {doctors.length === 0 && (
+                    <tr>
+                      <td colSpan="3" className="text-center py-6 text-slate-400">No doctor records found.</td>
                     </tr>
                   )}
                 </tbody>
@@ -360,6 +448,57 @@ const AdminDashboard = () => {
           </div>
         </div>
       </div>
+      
+      {/* Edit Doctor Modal */}
+      {editingDoctor && (
+        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 border border-slate-100 relative">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Edit Doctor Profile</h3>
+            <form onSubmit={handleUpdateDoctor} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">Doctor Full Name</label>
+                <input
+                  type="text"
+                  required
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-hospital-500"
+                  value={editName}
+                  onChange={e => setEditName(e.target.value)}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wider text-slate-500">Specialization</label>
+                <select
+                  className="mt-1 w-full px-3 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-hospital-500"
+                  value={editSpecialization}
+                  onChange={e => setEditSpecialization(e.target.value)}
+                >
+                  <option>Cardiology</option>
+                  <option>Neurology</option>
+                  <option>Pediatrics</option>
+                  <option>Orthopedics</option>
+                  <option>Dermatology</option>
+                  <option>Diagnostic Medicine</option>
+                </select>
+              </div>
+              <div className="flex space-x-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingDoctor(null)}
+                  className="flex-1 py-2 px-4 border border-slate-200 hover:bg-slate-50 text-slate-700 rounded-lg font-semibold text-sm transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 py-2 px-4 bg-hospital-600 hover:bg-hospital-700 text-white rounded-lg font-semibold text-sm shadow-md transition-colors"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   </PageTransition>
 );

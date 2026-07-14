@@ -1,4 +1,6 @@
+com\hospital\system\controller\DoctorController$MessageResponse.class
 com\hospital\system\service\S3MockService.class
+com\hospital\system\controller\DoctorController$DoctorUpdateRequest.class
 com\hospital\system\controller\AppointmentController$StatusUpdateRequest.class
 com\hospital\system\repository\AppointmentRepository.class
 com\hospital\system\HospitalManagementSystemApplication.class

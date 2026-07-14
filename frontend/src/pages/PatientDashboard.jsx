@@ -208,9 +208,10 @@ const PatientDashboard = () => {
                   <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider">Blood Group</label>
                   <select
                     className="mt-1 w-full px-3 py-1.5 border border-slate-200 rounded-lg text-sm bg-white"
-                    value={editBlood}
+                    value={editBlood || ''}
                     onChange={e => setEditBlood(e.target.value)}
                   >
+                    <option value="">Unknown</option>
                     <option>O+</option>
                     <option>O-</option>
                     <option>A+</option>

@@ -3,7 +3,9 @@ package com.hospital.system.service;
 import com.hospital.system.model.Doctor;
 import com.hospital.system.model.Role;
 import com.hospital.system.model.User;
+import com.hospital.system.model.Appointment;
 import com.hospital.system.repository.DoctorRepository;
+import com.hospital.system.repository.AppointmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,6 +20,9 @@ public class DoctorService {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     @Transactional
     public Doctor registerDoctor(String username, String password, String name, String specialization) {
@@ -47,5 +52,25 @@ public class DoctorService {
     public Optional<Doctor> getDoctorByUsername(String username) {
         return userService.findByUsername(username)
                 .flatMap(user -> doctorRepository.findByUser(user));
+    }
+
+    @Transactional
+    public Doctor updateDoctor(Long id, String name, String specialization) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        doctor.setName(name);
+        doctor.setSpecialization(specialization);
+        return doctorRepository.save(doctor);
+    }
+
+    @Transactional
+    public void deleteDoctor(Long id) {
+        Doctor doctor = doctorRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Doctor not found"));
+        
+        List<Appointment> appointments = appointmentRepository.findByDoctorOrderByAppointmentDateAsc(doctor);
+        appointmentRepository.deleteAll(appointments);
+        
+        doctorRepository.delete(doctor);
     }
 }

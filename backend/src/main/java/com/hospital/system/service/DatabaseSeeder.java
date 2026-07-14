@@ -24,8 +24,18 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+
     @Override
     public void run(String... args) throws Exception {
+        // Alter table to make blood_group column nullable
+        try {
+            jdbcTemplate.execute("ALTER TABLE patients MODIFY blood_group VARCHAR(255) NULL");
+            System.out.println("Database altered: patients.blood_group is now nullable.");
+        } catch (Exception e) {
+            System.out.println("Info: Could not alter patients table (might already be nullable): " + e.getMessage());
+        }
         // 1. Seed Admin
         if (userRepository.findByUsername("admin").isEmpty()) {
             User admin = User.builder()

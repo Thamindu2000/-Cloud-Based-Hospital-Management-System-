@@ -10,7 +10,7 @@ const Register = () => {
     password: '',
     name: '',
     age: '',
-    bloodGroup: 'O+',
+    bloodGroup: '',
     medicalHistory: '',
   });
   const [error, setError] = useState('');
@@ -138,6 +138,7 @@ const Register = () => {
                   value={formData.bloodGroup}
                   onChange={handleChange}
                 >
+                  <option value="">Unknown</option>
                   <option>O+</option>
                   <option>O-</option>
                   <option>A+</option>
