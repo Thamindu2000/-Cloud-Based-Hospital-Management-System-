@@ -9,6 +9,9 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
 @RestController
@@ -20,7 +23,7 @@ public class AppointmentController {
 
     @PostMapping("/book")
     @PreAuthorize("hasRole('PATIENT')")
-    public ResponseEntity<?> bookAppointment(@RequestBody BookAppointmentRequest request) {
+    public ResponseEntity<?> bookAppointment(@Valid @RequestBody BookAppointmentRequest request) {
         try {
             Appointment appointment = appointmentService.bookAppointment(
                     request.getPatientId(),
@@ -53,7 +56,7 @@ public class AppointmentController {
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasAnyRole('DOCTOR', 'ADMIN')")
-    public ResponseEntity<?> updateAppointmentStatus(@PathVariable Long id, @RequestBody StatusUpdateRequest request) {
+    public ResponseEntity<?> updateAppointmentStatus(@PathVariable Long id, @Valid @RequestBody StatusUpdateRequest request) {
         try {
             Appointment appointment = appointmentService.updateAppointmentStatus(id, request.getStatus());
             return ResponseEntity.ok(appointment);
@@ -65,14 +68,20 @@ public class AppointmentController {
     // Helper requests & responses
     @Data
     public static class BookAppointmentRequest {
+        @NotNull(message = "Patient ID is required")
         private Long patientId;
+
+        @NotNull(message = "Doctor ID is required")
         private Long doctorId;
+
+        @NotNull(message = "Appointment date is required")
         @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
         private LocalDateTime appointmentDate;
     }
 
     @Data
     public static class StatusUpdateRequest {
+        @NotBlank(message = "Status is required")
         private String status;
     }
 

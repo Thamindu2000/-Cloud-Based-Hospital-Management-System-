@@ -22,23 +22,34 @@ public class MedicalImageService {
     private PatientRepository patientRepository;
 
     @Autowired
-    private S3MockService s3MockService;
+    private S3StorageService s3StorageService;
 
-    @Transactional
+    @Transactional(rollbackFor = Exception.class)
     public MedicalImage uploadMedicalImage(Long patientId, MultipartFile file, String description) throws IOException {
         Patient patient = patientRepository.findById(patientId)
                 .orElseThrow(() -> new RuntimeException("Patient not found"));
 
-        String fileUrl = s3MockService.uploadFile(file);
+        String fileUrl = s3StorageService.uploadFile(file);
 
-        MedicalImage medicalImage = MedicalImage.builder()
-                .patient(patient)
-                .fileUrl(fileUrl)
-                .description(description)
-                .uploadedAt(LocalDateTime.now())
-                .build();
+        try {
+            MedicalImage medicalImage = MedicalImage.builder()
+                    .patient(patient)
+                    .fileUrl(fileUrl)
+                    .description(description)
+                    .uploadedAt(LocalDateTime.now())
+                    .build();
 
-        return medicalImageRepository.save(medicalImage);
+            return medicalImageRepository.save(medicalImage);
+        } catch (Exception e) {
+            try {
+                String filename = fileUrl.substring(fileUrl.lastIndexOf("/") + 1);
+                s3StorageService.deleteFile(filename);
+            } catch (Exception ex) {
+                // Log or print deletion failure
+                ex.printStackTrace();
+            }
+            throw e;
+        }
     }
 
     public List<MedicalImage> getImagesForPatient(Long patientId) {

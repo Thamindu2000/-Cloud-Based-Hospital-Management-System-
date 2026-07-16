@@ -2,7 +2,7 @@ package com.hospital.system.controller;
 
 import com.hospital.system.model.MedicalImage;
 import com.hospital.system.service.MedicalImageService;
-import com.hospital.system.service.S3MockService;
+import com.hospital.system.service.S3StorageService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 import org.springframework.http.HttpHeaders;
@@ -21,7 +21,7 @@ public class MedicalImageController {
     private MedicalImageService medicalImageService;
 
     @Autowired
-    private S3MockService s3MockService;
+    private S3StorageService s3StorageService;
 
     @PostMapping("/api/medical-images/upload")
     @PreAuthorize("hasAnyRole('PATIENT', 'ADMIN')")
@@ -48,7 +48,7 @@ public class MedicalImageController {
     @GetMapping("/api/files/{filename:.+}")
     public ResponseEntity<Resource> serveFile(@PathVariable String filename) {
         try {
-            Resource file = s3MockService.loadFileAsResource(filename);
+            Resource file = s3StorageService.loadFileAsResource(filename);
             
             // Try to determine content type dynamically based on file extension
             String contentType = "application/octet-stream";

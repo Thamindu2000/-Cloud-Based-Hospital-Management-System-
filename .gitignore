@@ -8,4 +8,6 @@ uploads/
 *.jar
 *.swp
 frontend/src/services/api.js.save
+frontend/build/
+
 

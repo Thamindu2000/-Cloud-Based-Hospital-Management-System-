@@ -18,6 +18,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -39,7 +43,7 @@ public class AuthController {
     private DoctorService doctorService;
 
     @PostMapping("/login")
-    public ResponseEntity<?> authenticateUser(@RequestBody LoginRequest loginRequest) {
+    public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getUsername(),
@@ -69,7 +73,7 @@ public class AuthController {
     }
 
     @PostMapping("/register/patient")
-    public ResponseEntity<?> registerPatient(@RequestBody PatientRegisterRequest request) {
+    public ResponseEntity<?> registerPatient(@Valid @RequestBody PatientRegisterRequest request) {
         try {
             Patient patient = patientService.registerPatient(
                     request.getUsername(),
@@ -86,7 +90,7 @@ public class AuthController {
     }
 
     @PostMapping("/register/doctor")
-    public ResponseEntity<?> registerDoctor(@RequestBody DoctorRegisterRequest request) {
+    public ResponseEntity<?> registerDoctor(@Valid @RequestBody DoctorRegisterRequest request) {
         try {
             Doctor doctor = doctorService.registerDoctor(
                     request.getUsername(),
@@ -105,7 +109,10 @@ public class AuthController {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class LoginRequest {
+        @NotBlank(message = "Username is required")
         private String username;
+
+        @NotBlank(message = "Password is required")
         private String password;
     }
 
@@ -130,10 +137,19 @@ public class AuthController {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class PatientRegisterRequest {
+        @NotBlank(message = "Username is required")
         private String username;
+
+        @NotBlank(message = "Password is required")
+        @Size(min = 6, message = "Password must be at least 6 characters")
         private String password;
+
+        @NotBlank(message = "Name is required")
         private String name;
+
+        @NotNull(message = "Age is required")
         private Integer age;
+
         private String bloodGroup;
         private String medicalHistory;
     }
@@ -142,9 +158,17 @@ public class AuthController {
     @NoArgsConstructor
     @AllArgsConstructor
     public static class DoctorRegisterRequest {
+        @NotBlank(message = "Username is required")
         private String username;
+
+        @NotBlank(message = "Password is required")
+        @Size(min = 6, message = "Password must be at least 6 characters")
         private String password;
+
+        @NotBlank(message = "Name is required")
         private String name;
+
+        @NotBlank(message = "Specialization is required")
         private String specialization;
     }
 

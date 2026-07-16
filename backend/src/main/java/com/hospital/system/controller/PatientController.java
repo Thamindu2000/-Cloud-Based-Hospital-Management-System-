@@ -7,6 +7,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 
 @RestController
 @RequestMapping("/api/patients")
@@ -31,7 +34,7 @@ public class PatientController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasAnyRole('ADMIN', 'PATIENT')")
-    public ResponseEntity<?> updatePatient(@PathVariable Long id, @RequestBody PatientUpdateRequest request) {
+    public ResponseEntity<?> updatePatient(@PathVariable Long id, @Valid @RequestBody PatientUpdateRequest request) {
         try {
             Patient updatedPatient = patientService.updatePatient(
                     id,
@@ -60,8 +63,12 @@ public class PatientController {
     // Inner DTO helper classes
     @lombok.Data
     public static class PatientUpdateRequest {
+        @NotBlank(message = "Name is required")
         private String name;
+
+        @NotNull(message = "Age is required")
         private Integer age;
+
         private String bloodGroup;
         private String medicalHistory;
     }

@@ -263,7 +263,7 @@ The production deployment runs on a single EC2 instance behind an Auto Scaling G
 
 ## Testing
 
-- **Unit / integration tests** (JUnit 5 + Mockito): `AuthControllerTest`, `AppointmentControllerTest`, `UserServiceTest`, `PatientServiceTest` — run via `mvn test`
+- **Unit / integration tests** (JUnit 5 + Mockito): `AuthControllerTest`, `AppointmentControllerTest`, `UserServiceTest`, `PatientServiceTest` (testing authentication logic, appointment booking status, password hashing, and patient profile fields mapping/normalization) — run via `mvn test`
 - **Load testing** (Postman): 20 virtual users, 1-minute run, 365 total requests across Login / Get All Doctors / Get All Patients — **0% error rate**, average response time 2.86s, P95 4.66s
 
 ---
