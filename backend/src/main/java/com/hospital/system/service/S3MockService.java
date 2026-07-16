@@ -1,56 +1,66 @@
+
 package com.hospital.system.service;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.Resource;
-import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
+import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.ServerSideEncryption;
+import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.Resource;
+
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
 @Service
 public class S3MockService {
 
-    @Value("${app.upload.dir}")
-    private String uploadDir;
+    @Value("${aws.s3.bucket-name}")
+    private String bucketName;
+
+    @Value("${aws.region}")
+    private String region;
+
+    private S3Client getS3Client() {
+        return S3Client.builder()
+                .region(Region.of(region))
+                .build();
+    }
 
     public String uploadFile(MultipartFile file) throws IOException {
-        Path uploadPath = Paths.get(uploadDir);
-        if (!Files.exists(uploadPath)) {
-            Files.createDirectories(uploadPath);
-        }
-
         String originalFilename = file.getOriginalFilename();
         String extension = "";
         if (originalFilename != null && originalFilename.contains(".")) {
             extension = originalFilename.substring(originalFilename.lastIndexOf("."));
         }
-
         String generatedFilename = UUID.randomUUID().toString() + extension;
-        Path targetLocation = uploadPath.resolve(generatedFilename);
 
-        Files.copy(file.getInputStream(), targetLocation, StandardCopyOption.REPLACE_EXISTING);
+        S3Client s3Client = getS3Client();
+        PutObjectRequest putRequest = PutObjectRequest.builder()
+                .bucket(bucketName)
+                .key(generatedFilename)
+                .serverSideEncryption(ServerSideEncryption.AES256)
+                .contentType(file.getContentType())
+                .build();
 
-        // Simulated S3 File URL pointing back to our local File serving API endpoint
+        s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
+        s3Client.close();
+
         return "http://localhost:8080/api/files/" + generatedFilename;
     }
 
     public Resource loadFileAsResource(String filename) {
-        try {
-            Path filePath = Paths.get(uploadDir).resolve(filename).normalize();
-            Resource resource = new UrlResource(filePath.toUri());
-            if (resource.exists()) {
-                return resource;
-            } else {
-                throw new RuntimeException("File not found: " + filename);
-            }
-        } catch (MalformedURLException ex) {
-            throw new RuntimeException("File not found: " + filename, ex);
-        }
+        S3Client s3Client = getS3Client();
+        GetObjectRequest getRequest = GetObjectRequest.builder()
+                .bucket(bucketName)
+                .key(filename)
+                .build();
+
+        return new InputStreamResource(s3Client.getObject(getRequest));
     }
 }
+

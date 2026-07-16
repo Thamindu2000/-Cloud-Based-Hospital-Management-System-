@@ -1,40 +1,21 @@
-version: '3.8'
-
 services:
-  db:
-    image: mysql:8.0
-    container_name: hospital-db
-    environment:
-      MYSQL_DATABASE: hospital_db
-      MYSQL_ROOT_PASSWORD: rootpassword
-      MYSQL_USER: hospital_user
-      MYSQL_PASSWORD: hospital_password
-    ports:
-      - "3306:3306"
-    volumes:
-      - mysql-data:/var/lib/mysql
-    healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p", "rootpassword"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   backend:
     build: ./backend
     container_name: hospital-backend
     ports:
       - "8080:8080"
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
-      - SPRING_DATASOURCE_URL=jdbc:mysql://db:3306/hospital_db?allowPublicKeyRetrieval=true&useSSL=false
-      - SPRING_DATASOURCE_USERNAME=hospital_user
-      - SPRING_DATASOURCE_PASSWORD=hospital_password
-      - JWT_SECRET=5367566B59703373367639792F423F4528482B4D6251655468576D5A71347437
-    depends_on:
-      db:
-        condition: service_healthy
+      - SPRING_DATASOURCE_URL=${DB_URL}
+      - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
+      - SPRING_DATASOURCE_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+      - AWS_REGION=${AWS_REGION}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
     volumes:
       - uploads-data:/app/uploads
-
   frontend:
     build: ./frontend
     container_name: hospital-frontend
@@ -42,7 +23,5 @@ services:
       - "80:80"
     depends_on:
       - backend
-
 volumes:
-  mysql-data:
   uploads-data:
