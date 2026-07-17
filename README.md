@@ -2,7 +2,7 @@
 
 A full-stack, cloud-native hospital management system built as part of the **Cloud Computing** module coursework (Option C: Cloud-Based Hospital Management System). The system is deployed on **AWS**, using managed database, object storage, auto-scaling, and IAM-based security throughout.
 
-**Live deployment:** 'http://13.51.255.252.nip.io`
+**Live deployment:** 'http://13.51.255.252.nip.io'
 
 ---
 
