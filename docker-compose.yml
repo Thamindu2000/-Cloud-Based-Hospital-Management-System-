@@ -4,7 +4,9 @@ services:
     container_name: hospital-backend
     ports:
       - "8080:8080"
-    dns: [8.8.8.8, 8.8.4.4]
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
     environment:
       - SPRING_DATASOURCE_URL=${DB_URL}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
@@ -15,16 +17,20 @@ services:
       - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     volumes:
       - uploads-data:/app/uploads
+
   frontend:
     build:
       context: ./frontend
       args:
-        REACT_APP_API_BASE_URL: http://13.51.255.252:8080
-        REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+        - REACT_APP_API_BASE_URL=http://13.51.255.252:8080
+        - REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     container_name: hospital-frontend
     ports:
       - "80:80"
+    environment:
+      - REACT_APP_GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     depends_on:
       - backend
+
 volumes:
   uploads-data:
