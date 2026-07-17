@@ -12,6 +12,10 @@ const Navbar = () => {
 
   const handleLogout = () => {
     localStorage.clear();
+    sessionStorage.clear();
+    setUsername('');
+    setProfilePic('');
+    window.dispatchEvent(new Event('profileUpdate'));
     navigate('/login');
   };
 

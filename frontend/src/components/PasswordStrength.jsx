@@ -1,4 +1,5 @@
 import React from 'react';
+import zxcvbn from 'zxcvbn';
 
 const PasswordStrength = ({ password }) => {
   const tests = [
@@ -7,7 +8,14 @@ const PasswordStrength = ({ password }) => {
     { regex: /[!@#$%^&*(),.?":{}|<>]/, text: "At least one special character (!@#$%^&*)" }
   ];
 
-  const score = password ? tests.filter(t => t.regex.test(password)).length : 0;
+  // Evaluate password strength score using zxcvbn (returns 0 to 4)
+  const score = password ? zxcvbn(password).score : 0;
+  
+  // Map zxcvbn 0-4 score to 3 segments:
+  // score 0, 1 -> 1 segment filled (Red)
+  // score 2 -> 2 segments filled (Orange)
+  // score 3, 4 -> 3 segments filled (Green)
+  const segmentsFilled = score === 0 ? 0 : score <= 2 ? score : 3;
   const colors = ["bg-red-500", "bg-orange-400", "bg-emerald-500"];
 
   return (
@@ -18,7 +26,7 @@ const PasswordStrength = ({ password }) => {
           <div
             key={i}
             className={`flex-1 transition-colors duration-300 ${
-              score > i ? colors[score - 1] : "bg-slate-200"
+              segmentsFilled > i ? colors[segmentsFilled - 1] : "bg-slate-200"
             } ${i > 0 ? "ml-1" : ""}`}
           ></div>
         ))}

@@ -103,6 +103,11 @@ const AdminProfile = () => {
       localStorage.setItem('username', response.data.username);
       localStorage.setItem('profilePictureUrl', response.data.profilePictureUrl || '');
       
+      if (response.data.profilePictureUrl) {
+        setPreviewUrl(response.data.profilePictureUrl);
+      }
+      setPhoto(null);
+
       // Notify the Navbar (and other components) about the profile update
       window.dispatchEvent(new Event('profileUpdate'));
 
