@@ -25,6 +25,9 @@ public class AdminProfileController {
     @Autowired
     private S3StorageService s3StorageService;
 
+    @Autowired
+    private org.springframework.security.crypto.password.PasswordEncoder passwordEncoder;
+
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(Authentication authentication) {
         String username = authentication.getName();
@@ -42,6 +45,8 @@ public class AdminProfileController {
     public ResponseEntity<?> updateProfile(
             @RequestParam("username") String newUsername,
             @RequestParam("fullName") String fullName,
+            @RequestParam(value = "currentPassword", required = false) String currentPassword,
+            @RequestParam(value = "newPassword", required = false) String newPassword,
             @RequestParam(value = "photo", required = false) MultipartFile photo,
             Authentication authentication) throws IOException {
 
@@ -58,6 +63,17 @@ public class AdminProfileController {
         }
 
         user.setFullName(fullName);
+
+        // Handle Password Change if requested
+        if (currentPassword != null && !currentPassword.isEmpty() && newPassword != null && !newPassword.isEmpty()) {
+            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+                return ResponseEntity.badRequest().body(Map.of("message", "Incorrect current password"));
+            }
+            if (newPassword.length() < 8) {
+                return ResponseEntity.badRequest().body(Map.of("message", "New password must be at least 8 characters"));
+            }
+            user.setPassword(passwordEncoder.encode(newPassword));
+        }
 
         if (photo != null && !photo.isEmpty()) {
             // Delete old photo if it exists on S3

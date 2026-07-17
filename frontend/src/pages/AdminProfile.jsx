@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import api from '../services/api';
 import PageTransition from '../components/PageTransition';
 import LoadingScreen from '../components/LoadingScreen';
+import PasswordStrength from '../components/PasswordStrength';
 
 const AdminProfile = () => {
   const [formData, setFormData] = useState({
     username: '',
     fullName: '',
+    currentPassword: '',
+    newPassword: '',
+    confirmNewPassword: '',
   });
   const [photo, setPhoto] = useState(null);
   const [previewUrl, setPreviewUrl] = useState('');
@@ -26,6 +30,9 @@ const AdminProfile = () => {
       setFormData({
         username: response.data.username || '',
         fullName: response.data.fullName || '',
+        currentPassword: '',
+        newPassword: '',
+        confirmNewPassword: '',
       });
       if (response.data.profilePictureUrl) {
         setPreviewUrl(response.data.profilePictureUrl);
@@ -59,9 +66,28 @@ const AdminProfile = () => {
     setSuccess('');
     setLoading(true);
 
+    if (formData.newPassword) {
+      if (!formData.currentPassword) {
+        setError('Current password is required to change password.');
+        setLoading(false);
+        return;
+      }
+      if (formData.newPassword !== formData.confirmNewPassword) {
+        setError('New passwords do not match.');
+        setLoading(false);
+        return;
+      }
+    }
+
     const submitData = new FormData();
     submitData.append('username', formData.username);
     submitData.append('fullName', formData.fullName);
+    
+    if (formData.currentPassword && formData.newPassword) {
+      submitData.append('currentPassword', formData.currentPassword);
+      submitData.append('newPassword', formData.newPassword);
+    }
+    
     if (photo) {
       submitData.append('photo', photo);
     }
@@ -73,10 +99,22 @@ const AdminProfile = () => {
         },
       });
 
-      // Update stored username in localStorage
+      // Update stored username and profile picture in localStorage
       localStorage.setItem('username', response.data.username);
+      localStorage.setItem('profilePictureUrl', response.data.profilePictureUrl || '');
+      
+      // Notify the Navbar (and other components) about the profile update
+      window.dispatchEvent(new Event('profileUpdate'));
 
       setSuccess('Profile updated successfully!');
+      
+      // Clear password fields
+      setFormData((prev) => ({
+        ...prev,
+        currentPassword: '',
+        newPassword: '',
+        confirmNewPassword: '',
+      }));
       setLoading(false);
     } catch (err) {
       console.error(err);
@@ -96,7 +134,7 @@ const AdminProfile = () => {
           <div className="flex items-center justify-between border-b border-slate-100 pb-4">
             <div>
               <h2 className="text-3xl font-extrabold text-slate-900">Admin Profile Management</h2>
-              <p className="mt-1 text-sm text-slate-500">Update your account credentials and personal details</p>
+              <p className="mt-1 text-sm text-slate-500">Update your account credentials, profile photo, and security details</p>
             </div>
             <Link to="/admin" className="text-hospital-600 hover:text-hospital-700 text-sm font-semibold flex items-center space-x-1">
               <span>&larr; Back to Dashboard</span>
@@ -161,6 +199,48 @@ const AdminProfile = () => {
                   value={formData.fullName}
                   onChange={handleInputChange}
                 />
+              </div>
+
+              {/* Password Change Fields */}
+              <div className="border-t border-slate-100 pt-6 space-y-4">
+                <h3 className="text-lg font-bold text-slate-900">Change Password</h3>
+                
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Current Password</label>
+                  <input
+                    name="currentPassword"
+                    type="password"
+                    className="mt-1 w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-hospital-500"
+                    placeholder="Enter current password to verify"
+                    value={formData.currentPassword}
+                    onChange={handleInputChange}
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">New Password</label>
+                  <input
+                    name="newPassword"
+                    type="password"
+                    className="mt-1 w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-hospital-500"
+                    placeholder="Enter new password"
+                    value={formData.newPassword}
+                    onChange={handleInputChange}
+                  />
+                  <PasswordStrength password={formData.newPassword} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700">Confirm New Password</label>
+                  <input
+                    name="confirmNewPassword"
+                    type="password"
+                    className="mt-1 w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-hospital-500"
+                    placeholder="Confirm new password"
+                    value={formData.confirmNewPassword}
+                    onChange={handleInputChange}
+                  />
+                </div>
               </div>
             </div>
 

@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import zxcvbn from 'zxcvbn';
 import api from '../services/api';
 import PageTransition from '../components/PageTransition';
 import LoadingScreen from '../components/LoadingScreen';
+import PasswordStrength from '../components/PasswordStrength';
 
 const Register = () => {
   const [formData, setFormData] = useState({
     username: '',
     password: '',
+    confirmPassword: '',
     fullName: '',
     age: '',
     bloodGroup: '',
@@ -26,24 +27,17 @@ const Register = () => {
     });
   };
 
-  const getPasswordStrength = (password) => {
-    if (!password) return null;
-    const result = zxcvbn(password);
-    const score = result.score;
-    if (score <= 1) {
-      return { label: 'Weak', color: 'text-red-500' };
-    } else if (score === 2) {
-      return { label: 'Medium', color: 'text-orange-500' };
-    } else {
-      return { label: 'Strong', color: 'text-green-500' };
-    }
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
     setSuccess('');
     setLoading(true);
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match.');
+      setLoading(false);
+      return;
+    }
 
     try {
       await api.post('/api/auth/register/patient', {
@@ -79,8 +73,6 @@ const Register = () => {
       setLoading(false);
     }
   };
-
-  const strength = getPasswordStrength(formData.password);
 
   return (
     <>
@@ -124,26 +116,6 @@ const Register = () => {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700">Password</label>
-                  <input
-                    name="password"
-                    type="password"
-                    required
-                    className="mt-1 w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-hospital-500"
-                    value={formData.password}
-                    onChange={handleChange}
-                  />
-                  {strength && (
-                    <div className="mt-1.5 flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Password Strength:</span>
-                      <span className={`font-semibold ${strength.color}`}>
-                        {strength.label}
-                      </span>
-                    </div>
-                  )}
-                </div>
-
-                <div>
                   <label className="block text-sm font-semibold text-slate-700">Full Name</label>
                   <input
                     name="fullName"
@@ -155,7 +127,32 @@ const Register = () => {
                   />
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-slate-700">Password</label>
+                  <input
+                    name="password"
+                    type="password"
+                    required
+                    className="mt-1 w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-hospital-500"
+                    value={formData.password}
+                    onChange={handleChange}
+                  />
+                  <PasswordStrength password={formData.password} />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-semibold text-slate-700">Confirm Password</label>
+                  <input
+                    name="confirmPassword"
+                    type="password"
+                    required
+                    className="mt-1 w-full px-4 py-2 border border-slate-200 rounded-xl text-sm focus:ring-2 focus:ring-hospital-500"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 md:col-span-2">
                   <div>
                     <label className="block text-sm font-semibold text-slate-700">Age</label>
                     <input

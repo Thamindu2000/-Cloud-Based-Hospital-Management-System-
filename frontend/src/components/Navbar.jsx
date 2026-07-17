@@ -1,16 +1,41 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import api from '../services/api';
 
 const Navbar = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
-  const username = localStorage.getItem('username');
   const role = localStorage.getItem('role');
+  
+  const [username, setUsername] = useState(localStorage.getItem('username') || '');
+  const [profilePic, setProfilePic] = useState(localStorage.getItem('profilePictureUrl') || '');
 
   const handleLogout = () => {
     localStorage.clear();
     navigate('/login');
   };
+
+  useEffect(() => {
+    // Fetch profile picture if not in local storage and logged in as admin
+    if (token && role === 'ROLE_ADMIN' && !profilePic) {
+      api.get('/api/admin/profile')
+        .then(res => {
+          if (res.data.profilePictureUrl) {
+            localStorage.setItem('profilePictureUrl', res.data.profilePictureUrl);
+            setProfilePic(res.data.profilePictureUrl);
+          }
+        })
+        .catch(err => console.error('Error loading navbar avatar:', err));
+    }
+
+    const handleProfileUpdate = () => {
+      setUsername(localStorage.getItem('username') || '');
+      setProfilePic(localStorage.getItem('profilePictureUrl') || '');
+    };
+
+    window.addEventListener('profileUpdate', handleProfileUpdate);
+    return () => window.removeEventListener('profileUpdate', handleProfileUpdate);
+  }, [token, role, profilePic]);
 
   if (!token) return null;
 
@@ -53,6 +78,13 @@ const Navbar = () => {
             </div>
   
             <div className="flex items-center space-x-4">
+              {role === 'ROLE_ADMIN' && profilePic && (
+                <img
+                  src={profilePic}
+                  alt="Admin Profile"
+                  className="w-10 h-10 rounded-full object-cover border-2 border-sky-300 shadow-sm"
+                />
+              )}
               <div className="flex flex-col text-right">
                 {role === 'ROLE_ADMIN' ? (
                   <Link to="/admin/profile" className="text-sm font-semibold hover:text-sky-200 hover:underline">
