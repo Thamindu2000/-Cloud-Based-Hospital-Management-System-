@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import api from '../services/api';
+import api, { API_BASE_URL } from '../services/api';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -9,6 +9,16 @@ const Navbar = () => {
   const [role, setRole] = useState(localStorage.getItem('role') || '');
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
   const [profilePic, setProfilePic] = useState(localStorage.getItem('profilePictureUrl') || '');
+
+  const getFullImageUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://')) {
+      return path;
+    }
+    const baseUrl = API_BASE_URL.replace(/\/$/, '');
+    const relativePath = path.startsWith('/') ? path : `/${path}`;
+    return `${baseUrl}${relativePath}`;
+  };
 
   const handleLogout = () => {
     localStorage.clear();
@@ -88,7 +98,7 @@ const Navbar = () => {
             <div className="flex items-center space-x-4">
               {role === 'ROLE_ADMIN' && profilePic && (
                 <img
-                  src={profilePic}
+                  src={getFullImageUrl(profilePic)}
                   alt="Admin Profile"
                   className="w-10 h-10 rounded-full object-cover border-2 border-sky-300 shadow-sm"
                 />

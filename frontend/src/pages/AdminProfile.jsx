@@ -1,12 +1,23 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import api from '../services/api';
+import api, { API_BASE_URL } from '../services/api';
 import PageTransition from '../components/PageTransition';
 import LoadingScreen from '../components/LoadingScreen';
 import PasswordStrength from '../components/PasswordStrength';
 
 const AdminProfile = () => {
   const navigate = useNavigate();
+
+  const getFullImageUrl = (path) => {
+    if (!path) return '';
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+      return path;
+    }
+    const baseUrl = API_BASE_URL.replace(/\/$/, '');
+    const relativePath = path.startsWith('/') ? path : `/${path}`;
+    return `${baseUrl}${relativePath}`;
+  };
+
   const [formData, setFormData] = useState({
     username: '',
     fullName: '',
@@ -157,7 +168,7 @@ const AdminProfile = () => {
             <div className="flex flex-col items-center space-y-4">
               <div className="relative w-32 h-32 rounded-full overflow-hidden border-4 border-slate-100 shadow-md bg-slate-50 flex items-center justify-center">
                 {previewUrl ? (
-                  <img src={previewUrl} alt="Profile Preview" className="w-full h-full object-cover" />
+                  <img src={getFullImageUrl(previewUrl)} alt="Profile Preview" className="w-full h-full object-cover" />
                 ) : (
                   <div className="w-full h-full flex items-center justify-center text-slate-400">
                     <svg className="w-16 h-16" fill="none" stroke="currentColor" viewBox="0 0 24 24">

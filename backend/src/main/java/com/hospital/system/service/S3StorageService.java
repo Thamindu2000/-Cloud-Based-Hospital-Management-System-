@@ -54,7 +54,7 @@ public class S3StorageService {
         s3Client.putObject(putRequest, RequestBody.fromInputStream(file.getInputStream(), file.getSize()));
         s3Client.close();
 
-        return "http://localhost:8080/api/files/" + generatedFilename;
+        return "/api/files/" + generatedFilename;
     }
 
     public Resource loadFileAsResource(String filename) {
