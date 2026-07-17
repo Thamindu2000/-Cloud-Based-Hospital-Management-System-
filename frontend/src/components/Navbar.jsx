@@ -4,15 +4,17 @@ import api from '../services/api';
 
 const Navbar = () => {
   const navigate = useNavigate();
-  const token = localStorage.getItem('token');
-  const role = localStorage.getItem('role');
   
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [role, setRole] = useState(localStorage.getItem('role') || '');
   const [username, setUsername] = useState(localStorage.getItem('username') || '');
   const [profilePic, setProfilePic] = useState(localStorage.getItem('profilePictureUrl') || '');
 
   const handleLogout = () => {
     localStorage.clear();
     sessionStorage.clear();
+    setToken('');
+    setRole('');
     setUsername('');
     setProfilePic('');
     window.dispatchEvent(new Event('profileUpdate'));
@@ -33,6 +35,8 @@ const Navbar = () => {
     }
 
     const handleProfileUpdate = () => {
+      setToken(localStorage.getItem('token') || '');
+      setRole(localStorage.getItem('role') || '');
       setUsername(localStorage.getItem('username') || '');
       setProfilePic(localStorage.getItem('profilePictureUrl') || '');
     };

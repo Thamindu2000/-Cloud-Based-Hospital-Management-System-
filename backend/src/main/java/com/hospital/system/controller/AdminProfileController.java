@@ -20,7 +20,7 @@ import java.util.Map;
 public class AdminProfileController {
 
     @Autowired
-    private UserRepository userRepository;
+    private com.hospital.system.service.UserService userService;
 
     @Autowired
     private S3StorageService s3StorageService;
@@ -31,7 +31,7 @@ public class AdminProfileController {
     @GetMapping("/profile")
     public ResponseEntity<?> getProfile(Authentication authentication) {
         String username = authentication.getName();
-        User user = userRepository.findByUsername(username)
+        User user = userService.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("Admin user not found"));
 
         Map<String, Object> profile = new HashMap<>();
@@ -51,12 +51,16 @@ public class AdminProfileController {
             Authentication authentication) throws IOException {
 
         String currentUsername = authentication.getName();
-        User user = userRepository.findByUsername(currentUsername)
+        User tempUser = userService.findByUsername(currentUsername)
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
+
+        // Fetch using the primary key ID to guarantee Hibernate performs an UPDATE instead of INSERT
+        User user = userService.findById(tempUser.getId())
                 .orElseThrow(() -> new RuntimeException("Admin user not found"));
 
         // If username changes, verify uniqueness
         if (!newUsername.equals(currentUsername)) {
-            if (userRepository.findByUsername(newUsername).isPresent()) {
+            if (userService.findByUsername(newUsername).isPresent()) {
                 return ResponseEntity.badRequest().body(Map.of("message", "Username already in use"));
             }
             user.setUsername(newUsername);
@@ -91,7 +95,7 @@ public class AdminProfileController {
             user.setProfilePictureUrl(photoUrl);
         }
 
-        userRepository.save(user);
+        userService.save(user);
 
         Map<String, Object> response = new HashMap<>();
         response.put("username", user.getUsername());

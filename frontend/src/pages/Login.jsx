@@ -28,6 +28,9 @@ const Login = () => {
         localStorage.setItem('profileId', profileId.toString());
       }
 
+      // Dispatch event to trigger navbar update immediately
+      window.dispatchEvent(new Event('profileUpdate'));
+
       // Redirect depending on authentication roles
       if (role === 'ROLE_ADMIN') {
         navigate('/admin');
