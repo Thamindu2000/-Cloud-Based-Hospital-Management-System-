@@ -43,10 +43,21 @@ const Register = () => {
       }, 2000);
     } catch (err) {
       console.error(err);
-      setError(
-        err.response?.data?.message || 
-        'Registration failed. Username may already be in use.'
-      );
+      let errorMsg = 'Registration failed. Username may already be in use.';
+      if (err.response?.data) {
+        if (err.response.data.message) {
+          errorMsg = err.response.data.message;
+        }
+        if (err.response.data.errors && Array.isArray(err.response.data.errors)) {
+          errorMsg = err.response.data.errors
+            .map((e) => e.defaultMessage)
+            .filter(Boolean)
+            .join(', ');
+        }
+      } else if (err.message) {
+        errorMsg = err.message;
+      }
+      setError(errorMsg);
       setLoading(false);
     }
   };
