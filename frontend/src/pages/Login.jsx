@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { GoogleLogin } from '@react-oauth/google';
 import api from '../services/api';
 import PageTransition from '../components/PageTransition';
 import LoadingScreen from '../components/LoadingScreen';
@@ -51,6 +52,54 @@ const Login = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    setError('');
+    setLoading(true);
+
+    try {
+      const response = await api.post('/api/auth/google', {
+        idToken: credentialResponse.credential,
+      });
+
+      const { accessToken, role, profileId } = response.data;
+
+      localStorage.setItem('token', accessToken);
+      localStorage.setItem('username', response.data.username);
+      localStorage.setItem('role', role);
+      
+      if (profileId) {
+        localStorage.setItem('profileId', profileId.toString());
+      }
+
+      // Dispatch event to trigger navbar update immediately
+      window.dispatchEvent(new Event('profileUpdate'));
+
+      // Redirect depending on authentication roles
+      if (role === 'ROLE_ADMIN') {
+        navigate('/admin');
+      } else if (role === 'ROLE_DOCTOR') {
+        navigate('/doctor');
+      } else if (role === 'ROLE_PATIENT') {
+        navigate('/patient');
+      } else {
+        setError('Invalid role assignment.');
+        localStorage.clear();
+      }
+    } catch (err) {
+      console.error(err);
+      setError(
+        err.response?.data?.message || 
+        'Google Authentication failed.'
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleError = () => {
+    setError('Google Sign-In failed. Please try again.');
   };
 
   return (
@@ -124,6 +173,23 @@ const Login = () => {
             </button>
           </div>
         </form>
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-slate-200"></div>
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-white px-2 text-slate-500">Or continue with</span>
+          </div>
+        </div>
+
+        <div className="flex justify-center">
+          <GoogleLogin
+            onSuccess={handleGoogleSuccess}
+            onError={handleGoogleError}
+            useOneTap
+          />
+        </div>
 
         <div className="text-center mt-4">
           <p className="text-sm text-slate-600">

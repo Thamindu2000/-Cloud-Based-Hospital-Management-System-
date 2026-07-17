@@ -11,6 +11,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -18,10 +19,16 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import java.util.Optional;
+import java.util.Collections;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdToken;
+import com.google.api.client.googleapis.auth.oauth2.GoogleIdTokenVerifier;
+import com.google.api.client.http.javanet.NetHttpTransport;
+import com.google.api.client.json.gson.GsonFactory;
 
 @RestController
 @RequestMapping("/api/auth")
@@ -41,6 +48,12 @@ public class AuthController {
 
     @Autowired
     private DoctorService doctorService;
+
+    @Value("${google.client-id}")
+    private String googleClientId;
+
+    @Autowired
+    private org.springframework.security.core.userdetails.UserDetailsService userDetailsService;
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
@@ -70,6 +83,81 @@ public class AuthController {
         }
 
         return ResponseEntity.ok(new JwtAuthenticationResponse(jwt, username, role, profileId));
+    }
+
+    @PostMapping("/google")
+    public ResponseEntity<?> authenticateGoogleUser(@Valid @RequestBody GoogleLoginRequest request) {
+        try {
+            GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(new NetHttpTransport(), new GsonFactory())
+                    .setAudience(Collections.singletonList(googleClientId))
+                    .build();
+
+            GoogleIdToken idToken = verifier.verify(request.getIdToken());
+            if (idToken == null) {
+                return ResponseEntity.badRequest().body(new MessageResponse("Invalid Google ID Token"));
+            }
+
+            GoogleIdToken.Payload payload = idToken.getPayload();
+            String email = payload.getEmail();
+            String name = (String) payload.get("name");
+            String pictureUrl = (String) payload.get("picture");
+
+            // Look up existing user
+            Optional<User> existingUser = userService.findByUsername(email);
+            User user;
+            if (existingUser.isEmpty()) {
+                // Register a new patient
+                String randomPassword = java.util.UUID.randomUUID().toString();
+                Patient patient = patientService.registerPatient(email, randomPassword, name, 0, "Unknown", "");
+                user = patient.getUser();
+                user.setFullName(name);
+                user.setProfilePictureUrl(pictureUrl);
+                userService.save(user);
+            } else {
+                user = existingUser.get();
+                // Optionally update profile picture if it was empty
+                if (user.getProfilePictureUrl() == null || user.getProfilePictureUrl().isEmpty()) {
+                    user.setProfilePictureUrl(pictureUrl);
+                    userService.save(user);
+                }
+            }
+
+            // Create Spring Security Authentication
+            org.springframework.security.core.userdetails.UserDetails userDetails = userDetailsService.loadUserByUsername(user.getUsername());
+            Authentication authentication = new UsernamePasswordAuthenticationToken(
+                    userDetails, null, userDetails.getAuthorities()
+            );
+            SecurityContextHolder.getContext().setAuthentication(authentication);
+
+            String jwt = tokenProvider.generateToken(authentication);
+            String role = tokenProvider.getRoleFromJwt(jwt);
+
+            Long profileId = null;
+            if (role.equals("ROLE_PATIENT")) {
+                Optional<Patient> patient = patientService.getPatientByUsername(user.getUsername());
+                if (patient.isPresent()) {
+                    profileId = patient.get().getId();
+                }
+            } else if (role.equals("ROLE_DOCTOR")) {
+                Optional<Doctor> doctor = doctorService.getDoctorByUsername(user.getUsername());
+                if (doctor.isPresent()) {
+                    profileId = doctor.get().getId();
+                }
+            }
+
+            return ResponseEntity.ok(new JwtAuthenticationResponse(jwt, user.getUsername(), role, profileId));
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(new MessageResponse("Google verification failed: " + e.getMessage()));
+        }
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class GoogleLoginRequest {
+        @NotBlank(message = "ID Token is required")
+        private String idToken;
     }
 
     @PostMapping("/register/patient")

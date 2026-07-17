@@ -12,6 +12,7 @@ services:
       - JWT_SECRET=${JWT_SECRET}
       - AWS_REGION=${AWS_REGION}
       - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}
     volumes:
       - uploads-data:/app/uploads
   frontend:
@@ -19,6 +20,7 @@ services:
       context: ./frontend
       args:
         REACT_APP_API_BASE_URL: http://13.51.255.252:8080
+        REACT_APP_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     container_name: hospital-frontend
     ports:
       - "80:80"
