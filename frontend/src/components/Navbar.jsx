@@ -54,7 +54,13 @@ const Navbar = () => {
   
             <div className="flex items-center space-x-4">
               <div className="flex flex-col text-right">
-                <span className="text-sm font-semibold">{username}</span>
+                {role === 'ROLE_ADMIN' ? (
+                  <Link to="/admin/profile" className="text-sm font-semibold hover:text-sky-200 hover:underline">
+                    {username}
+                  </Link>
+                ) : (
+                  <span className="text-sm font-semibold">{username}</span>
+                )}
                 <span className="text-xs text-sky-200 uppercase tracking-widest">{formatRole(role)}</span>
               </div>
               
