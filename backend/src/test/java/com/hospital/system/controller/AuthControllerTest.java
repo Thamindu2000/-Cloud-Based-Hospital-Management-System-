@@ -97,4 +97,26 @@ public class AuthControllerTest {
                 .andExpect(jsonPath("$.username").value("patient1"))
                 .andExpect(jsonPath("$.role").value("ROLE_PATIENT"));
     }
+
+    @Test
+    public void testRegisterPatientWithoutAuthAndWithoutCsrf() throws Exception {
+        com.hospital.system.model.Patient patient = new com.hospital.system.model.Patient();
+        patient.setId(1L);
+        com.hospital.system.model.User user = new com.hospital.system.model.User();
+        user.setUsername("newpatient");
+        patient.setUser(user);
+        patient.setName("New Patient");
+
+        when(patientService.registerPatient(any(), any(), any(), any(Integer.class), any(), any()))
+                .thenReturn(patient);
+
+        String registerJson = "{\"username\":\"newpatient\",\"password\":\"pass123\",\"name\":\"New Patient\",\"age\":25,\"bloodGroup\":\"O+\",\"medicalHistory\":\"None\"}";
+
+        mockMvc.perform(post("/api/auth/register/patient")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(registerJson))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.username").value("newpatient"))
+                .andExpect(jsonPath("$.name").value("New Patient"));
+    }
 }
