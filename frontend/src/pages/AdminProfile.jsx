@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import PageTransition from '../components/PageTransition';
 import LoadingScreen from '../components/LoadingScreen';
 import PasswordStrength from '../components/PasswordStrength';
 
 const AdminProfile = () => {
+  const navigate = useNavigate();
   const [formData, setFormData] = useState({
     username: '',
     fullName: '',
@@ -93,34 +94,27 @@ const AdminProfile = () => {
     }
 
     try {
-      const response = await api.put('/api/admin/profile', submitData, {
+      await api.put('/api/admin/profile', submitData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
       });
 
-      // Update stored username and profile picture in localStorage
-      localStorage.setItem('username', response.data.username);
-      localStorage.setItem('profilePictureUrl', response.data.profilePictureUrl || '');
+      setSuccess('Profile updated successfully! Redirecting to login to re-authenticate...');
       
-      if (response.data.profilePictureUrl) {
-        setPreviewUrl(response.data.profilePictureUrl);
-      }
-      setPhoto(null);
-
-      // Notify the Navbar (and other components) about the profile update
+      // Clear localStorage and sessionStorage to purge expired credentials
+      localStorage.clear();
+      sessionStorage.clear();
+      
+      // Notify the Navbar (and other components) to reset cached state
       window.dispatchEvent(new Event('profileUpdate'));
 
-      setSuccess('Profile updated successfully!');
-      
-      // Clear password fields
-      setFormData((prev) => ({
-        ...prev,
-        currentPassword: '',
-        newPassword: '',
-        confirmNewPassword: '',
-      }));
       setLoading(false);
+      
+      // Redirect to login after 2 seconds
+      setTimeout(() => {
+        navigate('/login');
+      }, 2000);
     } catch (err) {
       console.error(err);
       setError(err.response?.data?.message || 'Failed to update profile.');
