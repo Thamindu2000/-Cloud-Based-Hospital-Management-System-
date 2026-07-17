@@ -4,9 +4,7 @@ services:
     container_name: hospital-backend
     ports:
       - "8080:8080"
-    dns:
-      - 8.8.8.8
-      - 8.8.4.4
+    dns: [8.8.8.8, 8.8.4.4]
     environment:
       - SPRING_DATASOURCE_URL=${DB_URL}
       - SPRING_DATASOURCE_USERNAME=${DB_USERNAME}
@@ -17,7 +15,10 @@ services:
     volumes:
       - uploads-data:/app/uploads
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        REACT_APP_API_BASE_URL: http://13.51.255.252:8080
     container_name: hospital-frontend
     ports:
       - "80:80"
