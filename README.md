@@ -352,3 +352,5 @@ AWS credentials for S3 access are **not** set as environment variables in produc
 ## Team
 
 Group project for the Cloud Computing module — Option C: Cloud-Based Hospital Management System.
+
+Group members - Thamindu Jayawardana, Hashan Miyuru, Kavindya Sandipani
