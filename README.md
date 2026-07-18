@@ -4,6 +4,9 @@ A full-stack, cloud-native hospital management system built as part of the **Clo
 
 **Live deployment:**  'http://13.51.255.252.nip.io'
 
+Admin Username - Thamindu2000
+Admin Password - Tha@1195465
+
 ---
 
 ## 📋 Table of Contents
