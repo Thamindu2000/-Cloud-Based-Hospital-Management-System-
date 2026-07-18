@@ -129,6 +129,29 @@ const AdminDashboard = () => {
     }
   };
 
+  const handleExportCSV = async () => {
+    toast.info("Preparing clinician registry CSV export...");
+    try {
+      const response = await api.get('/api/doctors/export/csv', {
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data], { type: 'text/csv' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'careflow_staff_doctors.csv');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode.removeChild(link);
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("Clinician registry exported successfully!");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to export clinician registry CSV.");
+    }
+  };
+
   if (loading) {
     return <LoadingScreen message="Loading Admin Dashboard..." />;
   }
@@ -570,10 +593,7 @@ const AdminDashboard = () => {
                 </button>
 
                 <button 
-                  onClick={() => {
-                    toast.info("Exporting clinician registry...");
-                    setTimeout(() => toast.success("Registry download started as CSV!"), 1200);
-                  }}
+                  onClick={handleExportCSV}
                   className="w-full flex items-center space-x-3 p-3 border border-slate-100 hover:border-hospital-200 hover:bg-hospital-50/30 rounded-xl text-slate-700 hover:text-hospital-700 text-sm font-medium transition-all group text-left"
                 >
                   <span className="text-slate-400 group-hover:text-hospital-600">

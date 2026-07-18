@@ -3,9 +3,11 @@ package com.hospital.system.controller;
 import com.hospital.system.model.Doctor;
 import com.hospital.system.service.DoctorService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 @RestController
@@ -18,6 +20,47 @@ public class DoctorController {
     @GetMapping
     public ResponseEntity<List<Doctor>> getAllDoctors() {
         return ResponseEntity.ok(doctorService.getAllDoctors());
+    }
+
+    @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<byte[]> exportDoctorsToCsv() {
+        List<Doctor> doctors = doctorService.getAllDoctors();
+        
+        StringBuilder csvContent = new StringBuilder();
+        // Header row
+        csvContent.append("ID,Full Name,Specialization,Username\n");
+        
+        // Data rows
+        for (Doctor doc : doctors) {
+            String id = doc.getId() != null ? String.valueOf(doc.getId()) : "";
+            String name = doc.getName() != null ? doc.getName() : "";
+            String specialization = doc.getSpecialization() != null ? doc.getSpecialization() : "";
+            String username = (doc.getUser() != null && doc.getUser().getUsername() != null) 
+                    ? doc.getUser().getUsername() : "";
+            
+            csvContent.append(escapeCsvField(id)).append(",")
+                      .append(escapeCsvField(name)).append(",")
+                      .append(escapeCsvField(specialization)).append(",")
+                      .append(escapeCsvField(username)).append("\n");
+        }
+        
+        byte[] csvBytes = csvContent.toString().getBytes(StandardCharsets.UTF_8);
+        
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=careflow_staff_doctors.csv")
+                .header(HttpHeaders.CONTENT_TYPE, "text/csv; charset=UTF-8")
+                .body(csvBytes);
+    }
+
+    private String escapeCsvField(String field) {
+        if (field == null) {
+            return "";
+        }
+        if (field.contains(",") || field.contains("\"") || field.contains("\n") || field.contains("\r")) {
+            return "\"" + field.replace("\"", "\"\"") + "\"";
+        }
+        return field;
     }
 
     @GetMapping("/{id}")
