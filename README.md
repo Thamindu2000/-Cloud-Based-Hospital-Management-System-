@@ -2,7 +2,7 @@
 
 A full-stack, cloud-native hospital management system built as part of the **Cloud Computing** module coursework (Option C: Cloud-Based Hospital Management System). The system is deployed on **AWS**, using managed database, object storage, auto-scaling, and IAM-based security throughout.
 
-**Live deployment:** 'http://13.51.255.252.nip.io'
+**Live deployment:** `http://13.51.255.252.nip.io`
 
 ---
 
@@ -30,9 +30,9 @@ A full-stack, cloud-native hospital management system built as part of the **Clo
 
 CareFlow HMS digitizes core hospital operations for a mid-sized facility:
 
-- **Patients** can register, log in, manage their health profile, book appointments with specialists, and upload/view their own medical scans.
+- **Patients** can register (with real-time password strength feedback), log in — including via **Google Sign-In** — manage their health profile, book appointments with specialists, and upload/view their own medical scans.
 - **Doctors** can view their appointment schedule, approve or cancel bookings, and review patient medical images.
-- **Admins** have full visibility and control over all patients, doctors, and appointments in the system.
+- **Admins** have full visibility and control over all patients, doctors, and appointments in the system, and can self-manage their own account through a dedicated **Admin Profile** page — updating their username, full name, profile photo, and password without needing database access.
 
 The system was deliberately built as a **cloud-native** application — it doesn't just run *on* a cloud VM, it uses managed cloud services (S3, RDS, IAM, Auto Scaling) as first-class parts of the architecture, not afterthoughts.
 
@@ -74,6 +74,9 @@ The system was deliberately built as a **cloud-native** application — it doesn
           IAM Role (hospital-ec2-s3-role) — no static AWS keys,
           EC2 authenticates to S3 via instance profile only.
 
+          Google OAuth 2.0 — federated login alongside local
+          username/password authentication.
+
           CloudWatch Alarms — CPU-based target tracking (60%)
           drives the Auto Scaling Group scale-out/scale-in.
 ```
@@ -83,6 +86,7 @@ The system was deliberately built as a **cloud-native** application — it doesn
 - **Managed RDS instead of a database container** — durability, automated backups, and encryption are handled by AWS rather than re-implemented.
 - **Real S3, not local disk** — medical images are irreplaceable patient data; they belong in durable, versioned, encrypted object storage, not a container's ephemeral filesystem.
 - **IAM role over access keys** — the EC2 instance authenticates to S3 using an attached IAM role (`hospital-ec2-s3-role`), so no AWS credentials are ever stored in code, config, or environment variables.
+- **Google Sign-In alongside local auth** — reduces password fatigue for patients while keeping the existing username/password flow (and its BCrypt-hashed local credentials) fully intact for accounts that don't use Google.
 
 ---
 
@@ -90,12 +94,12 @@ The system was deliberately built as a **cloud-native** application — it doesn
 
 | Layer | Technology |
 |---|---|
-| **Backend** | Java 17, Spring Boot 3.3.1, Spring Data JPA (Hibernate), Spring Security, JWT (jjwt) |
-| **Frontend** | React 18.3.1, React Router 6.24.1, Axios, Tailwind CSS, Framer Motion |
+| **Backend** | Java 17, Spring Boot 3.3.1, Spring Data JPA (Hibernate), Spring Security, JWT (jjwt), OAuth 2.0 (Google) |
+| **Frontend** | React 18.3.1, React Router 6.24.1, Axios, Tailwind CSS, Framer Motion, zxcvbn (password strength scoring) |
 | **Database** | AWS RDS (MySQL 8.0), SSL-enforced connections |
 | **Object Storage** | AWS S3 (SSE-S3 encryption, versioning, lifecycle policies) |
 | **Compute** | AWS EC2 (t3.micro) behind an Auto Scaling Group, Docker + Docker Compose |
-| **Identity & Access** | AWS IAM (instance role for S3, no static keys) |
+| **Identity & Access** | AWS IAM (instance role for S3, no static keys); Google OAuth 2.0 for federated user login |
 | **Monitoring** | AWS CloudWatch (CPU-based scaling alarms) |
 | **Web Server** | Nginx (reverse proxy for the React build) |
 | **Testing** | JUnit 5, Mockito, Postman (functional + load testing) |
@@ -105,7 +109,8 @@ The system was deliberately built as a **cloud-native** application — it doesn
 ## Features
 
 ### Patient
-- Register / log in (JWT-based auth)
+- Register / log in via local credentials (JWT-based auth) **or Google Sign-In**
+- Real-time password strength meter during registration (length, uppercase, special character checks) with visual feedback
 - View and edit personal health profile (name, age, blood group, medical history)
 - Book appointments with a specialist by name/specialization
 - View own appointment history and status
@@ -120,6 +125,11 @@ The system was deliberately built as a **cloud-native** application — it doesn
 ### Admin
 - View, edit, and delete any patient or doctor profile
 - View all appointments across the system
+- **Admin Profile Management page** — self-service update of:
+  - Username
+  - Full name
+  - Profile photo
+  - Password (requires current password verification, with the same real-time strength meter used at registration)
 - Full system oversight
 
 ---
@@ -134,6 +144,7 @@ The system was deliberately built as a **cloud-native** application — it doesn
 | **Database** | RDS MySQL 8.0, SSL-enforced, automated backups enabled |
 | **Storage** | S3 bucket (`hospital-medical-imaging-*`) — private, versioned, SSE-S3 encrypted, lifecycle rule transitions objects to Glacier after 90 days |
 | **IAM** | `hospital-ec2-s3-role` — least-privilege policy scoped to `s3:GetObject`, `s3:PutObject`, `s3:ListBucket` on the specific bucket only |
+| **Identity** | Google OAuth 2.0 Client (Google Cloud Console) for federated sign-in, alongside local JWT auth |
 | **Monitoring** | CloudWatch alarms tied to the Auto Scaling target tracking policy |
 | **Security Groups** | SSH restricted to a specific IP; HTTP (80), API (8080) open; HTTPS (443) reserved for TLS |
 
@@ -149,6 +160,7 @@ Base URL: `http://<host>:8080/api`
 | POST | `/auth/login` | Authenticate, returns JWT |
 | POST | `/auth/register/patient` | Register a new patient |
 | POST | `/auth/register/doctor` | Register a new doctor |
+| GET | `/auth/google` / OAuth callback | Google Sign-In federated login flow |
 
 ### Patients
 | Method | Endpoint | Role |
@@ -182,13 +194,19 @@ Base URL: `http://<host>:8080/api`
 | GET | `/medical-images/patient/{patientId}` | PATIENT, DOCTOR, ADMIN |
 | GET | `/files/{filename}` | Public (S3-proxied download) |
 
+### Admin Profile
+| Method | Endpoint | Role |
+|---|---|---|
+| PUT | `/admin/profile` | ADMIN — update username, full name, profile photo |
+| PUT | `/admin/profile/password` | ADMIN — change password (requires current password) |
+
 ---
 
 ## Database Schema
 
 | Table | Key Fields |
 |---|---|
-| `users` | id, username (unique), password (bcrypt), role (`ADMIN`/`DOCTOR`/`PATIENT`) |
+| `users` | id, username (unique), password (bcrypt, nullable for OAuth-only accounts), role (`ADMIN`/`DOCTOR`/`PATIENT`), full_name, profile_picture_url |
 | `patients` | id, user_id (FK), name, age, blood_group, medical_history |
 | `doctors` | id, user_id (FK), name, specialization |
 | `appointments` | id, patient_id (FK), doctor_id (FK), appointment_date, status |
@@ -200,14 +218,16 @@ Schema is managed by Hibernate (`spring.jpa.hibernate.ddl-auto=update`) — tabl
 
 ## Security
 
-- **Authentication**: JWT (HS256), stateless sessions
+- **Authentication**: JWT (HS256), stateless sessions; Google OAuth 2.0 as an alternative federated login path
 - **Password hashing**: BCrypt
+- **Password strength enforcement**: client-side real-time scoring (zxcvbn) at both registration and admin password change, requiring minimum length, an uppercase letter, and a special character before submission
 - **Authorization**: Role-based access control (`@PreAuthorize` / Spring Security filter chain), enforced per-endpoint
-- **Secrets management**: No hardcoded credentials — DB password, JWT secret, and S3 config are all injected via environment variables (`.env`, not committed to git)
+- **Secrets management**: No hardcoded credentials — DB password, JWT secret, Google OAuth client secret, and S3 config are all injected via environment variables (`.env`, not committed to git)
 - **AWS access**: IAM instance role only — zero static AWS access keys anywhere in the codebase
 - **Database connection**: SSL-enforced (`useSSL=true`) in production
 - **Object storage**: Server-side encryption (SSE-S3/AES256) on every uploaded file; bucket is private with all public access blocked
 - **CORS**: Explicit allow-list of origins (no wildcard `*`)
+- **Admin self-service password change**: requires re-entry and verification of the current password before a new one is accepted
 
 ---
 
@@ -216,6 +236,7 @@ Schema is managed by Hibernate (`spring.jpa.hibernate.ddl-auto=update`) — tabl
 ### Prerequisites
 - Docker & Docker Compose
 - An AWS account with an S3 bucket and RDS MySQL instance (or adapt `docker-compose.yml` to run a local MySQL container for development)
+- A Google Cloud OAuth 2.0 Client ID/Secret if testing Google Sign-In locally
 
 ### Steps
 
@@ -236,6 +257,8 @@ DB_PASSWORD=<your-db-password>
 JWT_SECRET=<a-random-256-bit-hex-string>
 AWS_REGION=<your-region>
 S3_BUCKET_NAME=<your-bucket-name>
+GOOGLE_CLIENT_ID=<your-google-oauth-client-id>
+GOOGLE_CLIENT_SECRET=<your-google-oauth-client-secret>
 ```
 
 ```bash
@@ -256,14 +279,14 @@ The production deployment runs on a single EC2 instance behind an Auto Scaling G
 1. A custom AMI is baked from a configured EC2 instance (Docker + app pre-installed).
 2. A Launch Template references that AMI.
 3. An Auto Scaling Group (min 1, max 2, across 2 AZs) uses the Launch Template, with a CPU-based target tracking scaling policy.
-4. `docker compose up -d --build` builds and runs the frontend and backend containers on each instance.
+4. `docker compose up -d --build` builds and runs the frontend and backend containers on each instance. The frontend build receives `REACT_APP_API_BASE_URL` as a Docker build argument so it targets the correct server IP rather than `localhost`.
 5. Both containers connect out to the shared RDS database and S3 bucket — state is not stored on the instance itself, so it can scale horizontally.
 
 ---
 
 ## Testing
 
-- **Unit / integration tests** (JUnit 5 + Mockito): `AuthControllerTest`, `AppointmentControllerTest`, `UserServiceTest`, `PatientServiceTest` (testing authentication logic, appointment booking status, password hashing, and patient profile fields mapping/normalization) — run via `mvn test`
+- **Unit / integration tests** (JUnit 5 + Mockito): `AuthControllerTest`, `AppointmentControllerTest`, `UserServiceTest`, `PatientServiceTest` — run via `mvn test`
 - **Load testing** (Postman): 20 virtual users, 1-minute run, 365 total requests across Login / Get All Doctors / Get All Patients — **0% error rate**, average response time 2.86s, P95 4.66s
 
 ---
@@ -274,17 +297,17 @@ The production deployment runs on a single EC2 instance behind an Auto Scaling G
 .
 ├── backend/
 │   ├── src/main/java/com/hospital/system/
-│   │   ├── controller/       # REST controllers
+│   │   ├── controller/       # REST controllers (incl. AdminProfileController)
 │   │   ├── model/             # JPA entities
 │   │   ├── repository/        # Spring Data repositories
-│   │   ├── security/          # JWT + Spring Security config
+│   │   ├── security/          # JWT + Google OAuth + Spring Security config
 │   │   └── service/            # Business logic, S3 integration
 │   ├── src/test/java/...      # Unit & integration tests
 │   ├── Dockerfile
 │   └── pom.xml
 ├── frontend/
 │   ├── src/
-│   │   ├── components/        # React components / dashboards
+│   │   ├── components/        # React components / dashboards / admin profile page
 │   │   └── services/api.js    # Axios API client
 │   ├── Dockerfile
 │   └── package.json
@@ -305,6 +328,8 @@ The production deployment runs on a single EC2 instance behind an Auto Scaling G
 | `JWT_SECRET` | Signing key for JWTs (HS256, 256-bit) |
 | `AWS_REGION` | AWS region for S3 |
 | `S3_BUCKET_NAME` | Target S3 bucket for medical images |
+| `GOOGLE_CLIENT_ID` | OAuth 2.0 Client ID for Google Sign-In |
+| `GOOGLE_CLIENT_SECRET` | OAuth 2.0 Client Secret for Google Sign-In |
 
 AWS credentials for S3 access are **not** set as environment variables in production — they're provided automatically via the EC2 instance's attached IAM role.
 
@@ -317,6 +342,7 @@ AWS credentials for S3 access are **not** set as environment variables in produc
 - No CI/CD pipeline — deployment is manual via SSH + `docker compose`
 - Load testing was limited in scale (20 virtual users); a larger-scale test (e.g. JMeter with hundreds of users) would give a more complete picture under heavy load
 - No WAF or DDoS protection in front of the API
+- Google Sign-In accounts are not yet linked to existing local accounts sharing the same email — each is treated as a distinct sign-in path
 
 ---
 
