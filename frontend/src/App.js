@@ -10,12 +10,15 @@ import AdminProfile from './pages/AdminProfile';
 import DoctorDashboard from './pages/DoctorDashboard';
 import PatientDashboard from './pages/PatientDashboard';
 import Footer from './components/Footer';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 function App() {
   const location = useLocation();
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
+      <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
       <Navbar />
       <main className="flex-grow flex flex-col">
         <AnimatePresence mode="wait">

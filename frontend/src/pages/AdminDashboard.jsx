@@ -3,8 +3,7 @@ import api from '../services/api';
 import { formatAppointmentDate } from '../utils/dateFormatter';
 import PageTransition from '../components/PageTransition';
 import LoadingScreen from '../components/LoadingScreen';
-import { ToastContainer, toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { toast } from 'react-toastify';
 
 const AdminDashboard = () => {
   const [patients, setPatients] = useState([]);
@@ -159,9 +158,6 @@ const AdminDashboard = () => {
   return (
     <PageTransition>
       <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Toast Notification Container */}
-        <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} />
-
         {/* Dashboard Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
           <div>

@@ -3,13 +3,7 @@ import api from '../services/api';
 import { formatAppointmentDate } from '../utils/dateFormatter';
 import PageTransition from '../components/PageTransition';
 import LoadingScreen from '../components/LoadingScreen';
-
-const getFormattedFileUrl = (url) => {
-  if (!url) return '';
-  const apiBase = api.defaults.baseURL || 'http://localhost:8080';
-  const normalizedBase = apiBase.endsWith('/') ? apiBase.slice(0, -1) : apiBase;
-  return url.replace('http://localhost:8080', normalizedBase);
-};
+import { toast } from 'react-toastify';
 
 const DoctorDashboard = () => {
   const [appointments, setAppointments] = useState([]);
@@ -29,6 +23,32 @@ const DoctorDashboard = () => {
       console.error("Error fetching scans:", err);
     }
   };
+
+  const handleViewFile = async (fileUrl) => {
+    if (!fileUrl) return;
+    const match = fileUrl.match(/\/api\/files\/.+/);
+    const relativePath = match ? match[0] : fileUrl;
+
+    toast.info("Loading medical file securely...");
+    try {
+      const response = await api.get(relativePath, {
+        responseType: 'blob'
+      });
+      const contentType = response.headers['content-type'] || 'application/pdf';
+      const fileBlob = new Blob([response.data], { type: contentType });
+      const objectUrl = window.URL.createObjectURL(fileBlob);
+      window.open(objectUrl, '_blank');
+      
+      setTimeout(() => {
+        window.URL.revokeObjectURL(objectUrl);
+      }, 5000);
+      toast.success("File opened successfully.");
+    } catch (err) {
+      console.error(err);
+      toast.error("Failed to open file. Please try again.");
+    }
+  };
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
@@ -241,14 +261,12 @@ const DoctorDashboard = () => {
                     <span className="font-semibold text-slate-700 text-sm">{s.description}</span>
                     <span className="text-[10px] text-slate-400 font-normal">Uploaded: {new Date(s.uploadedAt).toLocaleString()}</span>
                   </div>
-                  <a
-                    href={getFormattedFileUrl(s.fileUrl)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-xs font-bold text-hospital-600 hover:text-hospital-800 border border-hospital-200 rounded-lg px-3 py-1.5 bg-white hover:bg-hospital-50 transition-colors shadow-sm"
+                  <button
+                    onClick={() => handleViewFile(s.fileUrl)}
+                    className="text-xs font-bold text-hospital-600 hover:text-hospital-800 border border-hospital-200 rounded-lg px-3 py-1.5 bg-white hover:bg-hospital-50 transition-colors shadow-sm cursor-pointer"
                   >
                     View File
-                  </a>
+                  </button>
                 </div>
               ))}
               {selectedPatientScans.length === 0 && (
